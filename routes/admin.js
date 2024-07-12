@@ -13,15 +13,15 @@ router.post(
   "/add-product",
   [
     body("title")
-      .isString()
-      .withMessage("Title must be String.")
+      .isAlphanumeric()
+      .withMessage("Title must be alphanumeric.")
       .isLength({ min: 3 })
       .withMessage("Title must be at least 3 characters long.")
       .trim(),
     body("price").isFloat().withMessage("Price must be a number."),
     body("description")
-      .isString()
-      .withMessage("Description must be string.")
+      .isAlphanumeric()
+      .withMessage("Description must be alphanumeric.")
       .isLength({ min: 5, max: 400 })
       .withMessage("Description must be between 5 and 400 characters.")
       .trim(),
@@ -41,7 +41,6 @@ router.post(
       .isLength({ min: 3 })
       .withMessage("Title must be at least 3 characters long.")
       .trim(),
-    body("imageUrl").isURL().withMessage("Image URL must be valid."),
     body("price").isFloat().withMessage("Price must be a number."),
     body("description")
       .isLength({ min: 5, max: 400 })

@@ -12,7 +12,7 @@ const multer = require("multer");
 const errorController = require("./controllers/error");
 const User = require("./models/user");
 
-const MONGODB_URI = "mongodb://localhost:27017/Database";
+const MONGODB_URI = "mongodb+srv://aung:admin123@cluster0.ufgwddi.mongodb.net/file?retryWrites=true&w=majority&appName=Cluster0";
 
 const app = express();
 const store = new MongoDBStore({
@@ -23,12 +23,25 @@ const csrfProtection = csrf();
 
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, images);
+    cb(null, "images");
   },
   filename: (req, file, cb) => {
-    cb(null, 'file.filename+"_"+file.originalname');
+    cb(null, new Date().toISOString() + "-" + file.originalname);
   },
 });
+
+
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype === "image/png" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image.jpeg"
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
 
 app.set("view engine", "ejs");
 app.set("views", "views");
@@ -38,8 +51,11 @@ const shopRoutes = require("./routes/shop");
 const authRoutes = require("./routes/auth");
 
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(multer({ storage: fileStorage }).single("image"));
+app.use(multer({ storage: fileStorage ,fileFilter:fileFilter}).single("image"));
+
 app.use(express.static(path.join(__dirname, "public")));
+app.use('/images',express.static(path.join(__dirname,"images")));
+
 app.use(
   session({
     secret: "my secret",
@@ -90,7 +106,7 @@ app.use((error, req, res, next) => {
   res.status(500).render("500", {
     pageTitle: "Error!",
     path: "/500",
-    isAuthenticated: req.session.isLoggedIn,
+    isAuthenticated: req.session ? req.session.isLoggedIn : false,
   });
 });
 

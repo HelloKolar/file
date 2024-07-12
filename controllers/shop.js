@@ -1,5 +1,10 @@
+const fs = require("fs");
+const path = require("path");
+
 const Product = require("../models/product");
 const Order = require("../models/order");
+
+const PDFDocument = require("pdfkit");
 
 exports.getProducts = (req, res, next) => {
   Product.find()
@@ -14,7 +19,7 @@ exports.getProducts = (req, res, next) => {
     .catch((err) => {
       const error = new Error(err);
       error.httpStatusCode = 500;
-      return next(error);
+      return next();
     });
 };
 
@@ -31,7 +36,7 @@ exports.getProduct = (req, res, next) => {
     .catch((err) => {
       const error = new Error(err);
       error.httpStatusCode = 500;
-      return next(error);
+      return next();
     });
 };
 
@@ -47,7 +52,7 @@ exports.getIndex = (req, res, next) => {
     .catch((err) => {
       const error = new Error(err);
       error.httpStatusCode = 500;
-      return next(error);
+      return next();
     });
 };
 
@@ -66,7 +71,7 @@ exports.getCart = (req, res, next) => {
     .catch((err) => {
       const error = new Error(err);
       error.httpStatusCode = 500;
-      return next(error);
+      return next();
     });
 };
 
@@ -79,11 +84,6 @@ exports.postCart = (req, res, next) => {
     .then((result) => {
       console.log(result);
       res.redirect("/cart");
-    })
-    .catch((err) => {
-      const error = new Error(err);
-      error.httpStatusCode = 500;
-      return next(error);
     });
 };
 
@@ -97,7 +97,7 @@ exports.postCartDeleteProduct = (req, res, next) => {
     .catch((err) => {
       const error = new Error(err);
       error.httpStatusCode = 500;
-      return next(error);
+      return next();
     });
 };
 
@@ -127,7 +127,7 @@ exports.postOrder = (req, res, next) => {
     .catch((err) => {
       const error = new Error(err);
       error.httpStatusCode = 500;
-      return next(error);
+      return next();
     });
 };
 
@@ -143,6 +143,66 @@ exports.getOrders = (req, res, next) => {
     .catch((err) => {
       const error = new Error(err);
       error.httpStatusCode = 500;
-      return next(error);
+      return next();
     });
+};
+
+//Invoice
+exports.getInvoice = (req, res, next) => {
+  const orderId = req.params.orderId;
+  Order.findById(orderId)
+    .then((order) => {
+      if (!order) {
+        return next(new Error("No Order Found"));
+      }
+      if (order.user.userId.toString() !== req.user._id.toString()) {
+        return next(new Error("Unathorized"));
+      }
+      const invoiceName = "invoice-" + orderId + ".pdf";
+      const invoicePath = path.join("data", "invoices", invoiceName);
+
+      //pdfKit
+      const pdfDoc = new PDFDocument();
+      res.setHeader("Content-Type", "application/pdf");
+      //inline(download auto) //attachement(rename file when download)
+      res.setHeader(
+        "Content-Disposition",
+        'inline; filename="' + invoiceName + '"'
+      );
+
+      pdfDoc.pipe(fs.createWriteStream(invoicePath));
+      pdfDoc.pipe(res);
+
+      pdfDoc.fontSize(26).text("Invoice PDF ", { underline: true });
+      pdfDoc.text("-----------------------------");
+      let totalprice = 0;
+      order.products.forEach((prod) => {
+        totalprice += prod.quantity * prod.product.price;
+        pdfDoc
+          .fontSize(14)
+          .text(
+            prod.product.title +
+              " - " +
+              prod.quantity +
+              "x" +
+              "$" +
+              prod.product.price
+          );
+      });
+      pdfDoc.text("-----------------------------");
+      pdfDoc.fontSize(20).text("Total Price :" + totalprice);
+
+      pdfDoc.end();
+
+      // fs.readFile(invoicePath, (err, data) => {
+      //   if (err) {
+      //     return next(err);
+      //   }
+      //   res.setHeader("Content-Type", "application/pdf");
+      //   //inline(download auto) //attachement(rename file when download)
+      //   res.setHeader('Content-Disposition', `inline; filename="${invoiceName}"`);
+      //   res.send(data);
+      //});
+    })
+    .catch((err) => next(err));
 };

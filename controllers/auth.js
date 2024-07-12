@@ -99,7 +99,7 @@ exports.postLogin = (req, res, next) => {
     .catch((err) => {
       const error = new Error(err);
       error.httpStatusCode = 500;
-      return next(error);
+      return next();
     });
 };
 
@@ -140,7 +140,7 @@ exports.postSignup = (req, res, next) => {
     .catch((err) => {
       const error = new Error(err);
       error.httpStatusCode = 500;
-      return next(error);
+      return next();
     });
 };
 
